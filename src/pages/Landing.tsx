@@ -8,6 +8,7 @@ export function Landing() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = () => {
@@ -21,32 +22,52 @@ export function Landing() {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address (e.g., name@example.com)');
+      setError('Please enter a valid email address');
       return;
     }
 
     try {
       setLoading(true);
-      // Insert email into the waitlist table
+      
+      // 1. Insert into waitlist table
       const { error: insertError } = await supabase
         .from('waitlist')
         .insert([{ email }]);
 
       if (insertError) throw insertError;
 
-      // Call the Edge Function to send a confirmation email
-      const { error: functionError } = await supabase.functions.invoke('send-waitlist-confirmation', {
-        body: JSON.stringify({ email })
+      // 2. Send confirmation email via Supabase Auth
+      const { error: emailError } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+          data: { type: 'waitlist_confirmation' }
+        }
       });
 
-      if (functionError) throw functionError;
+      if (emailError) throw emailError;
 
       setSuccess(true);
       setEmail('');
-      setTimeout(() => setSuccess(false), 5000);
+      setSuccessMessage('Confirmation email sent! Check your inbox.');
+
     } catch (err) {
-      setError('Failed to join waitlist. Please try again or contact support.');
-      console.error('Waitlist error:', err);
+      let errorMessage = 'Failed to join waitlist';
+      
+      // Handle Error instances
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } 
+      // Handle string error messages
+      else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      // Handle Supabase errors
+      else if (err && typeof err === 'object' && 'message' in err) {
+        errorMessage = (err as { message: string }).message;
+      }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -105,6 +126,11 @@ export function Landing() {
           {success && (
             <p className="text-green-500 text-sm mt-2 animate-fade-in">
               🎉 Thanks for joining! You'll be the first to know about new features.
+            </p>
+          )}
+          {successMessage && (
+            <p className="text-green-500 text-sm mt-2 animate-fade-in">
+              {successMessage}
             </p>
           )}
         </div>
