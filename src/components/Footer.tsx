@@ -1,7 +1,7 @@
 import React from 'react';
 export function Footer() {
   return <footer className="py-8 px-4 sm:px-6 lg:px-8" style={{
-    backgroundColor: 'rgba(240, 244, 248, 0.7)'
+    backgroundColor: 'white'
   }}>
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
         <div className="mb-4 md:mb-0">

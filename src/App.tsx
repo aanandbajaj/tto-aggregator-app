@@ -1,31 +1,57 @@
 import React from 'react';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Landing } from './pages/Landing';
+import { Login } from './pages/Login';
+import { SearchResults } from './pages/SearchResults';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { AppRoutes } from './routes';
+import { HomeSearch } from './pages/HomeSearch';
 
-export function App() {
+// Protected route component
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) return <div>Loading...</div>;
+  
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  return <>{children}</>;
+};
+
+function AppRoutes() {
   return (
-    <BrowserRouter>
-      <div className="flex flex-col min-h-screen" style={{
-        backgroundColor: '#F0F4F8',
-        backgroundImage: `
-          linear-gradient(
-            rgba(148, 163, 184, 0.1) 1px, 
-            transparent 1px
-          ),
-          linear-gradient(
-            90deg, 
-            rgba(148, 163, 184, 0.1) 1px, 
-            transparent 1px
-          )
-        `,
-        backgroundSize: '20px 20px'
-      }}>
-        <Header />
-        <AppRoutes />
-        <Footer />
-      </div>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={<Login />} />
+      <Route 
+        path="/search" 
+        element={
+          <ProtectedRoute>
+            <SearchResults />
+          </ProtectedRoute>
+        } 
+      />
+      <Route path="/homesearch" element={<HomeSearch />} />
+      {/* Add other protected routes as needed */}
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex flex-col flex-grow h-full">
+             <AppRoutes />
+          </main>
+          <Footer />
+        </div>
+      </AuthProvider>
+    </Router>
   );
 }

@@ -12,7 +12,7 @@ export interface TechnologyListing {
   export interface TechnologyDetail {
     id: number
     technology_id: number
-    description: text
+    description: string
     ip_status: any // You might want to define a specific type for this jsonb field
     file_links: string[]
     created_at: string
