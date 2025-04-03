@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Tooltip } from 'react-tooltip';
 
 interface SearchBarProps {
   placeholder?: string
@@ -10,7 +11,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ 
-  placeholder = "Search technologies...", 
+  placeholder = "Search technologies, inventors, and keywords...", 
   buttonText = "Search",
   initialQuery = '',
   className = ''
@@ -43,6 +44,14 @@ export function SearchBar({
       >
         <Search className="h-6 w-6" />
       </button>
+      <div className="ml-2">
+        <Info 
+          className="h-6 w-6 text-gray-500 cursor-pointer" 
+          data-tooltip-id="advanced-search-tooltip"
+          data-tooltip-content="Use AND, OR, and NOT for advanced search. Example: 'term1 AND term2'"
+        />
+        <Tooltip id="advanced-search-tooltip" />
+      </div>
     </form>
   );
 }

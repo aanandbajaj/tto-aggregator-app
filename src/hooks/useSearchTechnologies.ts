@@ -7,6 +7,11 @@ interface TechnologyListing {
   description?: string
   inventors: string[]
   technology_areas: string[]
+  university_name?: string
+  case_number?: string
+  url?: string
+  cleaned_url?: string
+  details_url?: string
 }
 
 interface SupabaseTechnologyListing {
@@ -15,8 +20,16 @@ interface SupabaseTechnologyListing {
   case_number: string
   inventors: string[]
   technology_areas: string[]
+  university_id: number
+  url?: string
+  cleaned_url?: string
+  universities: {
+    name: string
+  } | null
   technology_details: {
     description: string | null
+    refined_description: string | null
+    url?: string
   } | null
 }
 
@@ -30,39 +43,165 @@ export function useSearchTechnologies() {
       setIsLoading(true)
       setError(null)
 
-      const { data, error } = await supabase
+      // Parse the query for special operators
+      let searchQuery = query.trim();
+      let orTerms: string[] = [];
+      let notTerms: string[] = [];
+      let andTerms: string[] = [];
+
+      // Process OR terms (format: "term1 OR term2")
+      if (searchQuery.includes(" OR ")) {
+        orTerms = searchQuery.split(" OR ").map(term => term.trim());
+        searchQuery = ""; // Clear the search query as we'll use OR logic
+      } 
+      // Process NOT terms (format: "term1 NOT term2")
+      else if (searchQuery.includes(" NOT ")) {
+        const parts = searchQuery.split(" NOT ");
+        andTerms = [parts[0].trim()];
+        notTerms = parts.slice(1).map(term => term.trim());
+        searchQuery = ""; // Clear the search query as we'll use NOT logic
+      }
+      // Process AND terms (format: "term1 AND term2")
+      else if (searchQuery.includes(" AND ")) {
+        andTerms = searchQuery.split(" AND ").map(term => term.trim());
+        searchQuery = ""; // Clear the search query as we'll use AND logic
+      }
+      // Default case: treat as a simple query
+      else {
+        andTerms = [searchQuery];
+        searchQuery = "";
+      }
+
+      // Start building the query
+      let supabaseQuery = supabase
         .from('technology_listings')
         .select(`
           id,
           title,
           inventors,
           technology_areas,
+          case_number,
+          url,
+          cleaned_url,
+          university_id,
+          universities!technology_listings_university_id_fkey (
+            name
+          ),
           technology_details!technology_details_technology_id_fkey (
-            description
+            description,
+            refined_description,
+            url
           )
+        `);
+      // Handle OR terms
+      if (orTerms.length > 0) {
+        const orFilters = orTerms.map(term => `title.ilike.%${term}%`).join(',');
+        supabaseQuery = supabaseQuery.or(orFilters);
+      }
+      // Handle AND terms (implicit AND by chaining)
+      else if (andTerms.length > 0) {
+        // For each AND term, apply an ilike filter
+        andTerms.forEach(term => {
+          supabaseQuery = supabaseQuery.ilike('title', `%${term}%`);
+        });
+
+        // Handle NOT terms if any
+        if (notTerms.length > 0) {
+          notTerms.forEach(term => {
+            supabaseQuery = supabaseQuery.not('title', 'ilike', `%${term}%`);
+          });
+        }
+      }
+
+      console.log('Executing title search query...');
+      const { data: listingsData, error: listingsError } = await supabaseQuery;
+
+      if (listingsError) {
+        console.error('Supabase error:', listingsError)
+        throw listingsError
+      }
+
+      console.log('Title search results (first 5):', JSON.stringify((listingsData || []).slice(0, 5).map(d => ({id: d.id, title: d.title})), null, 2));
+
+      // Then, search in the technology_details table (for description or refined_description field)
+      const { data: detailsData, error: detailsError } = await supabase
+        .from('technology_details')
+        .select(`
+          technology_id,
+          description,
+          refined_description
         `)
-        .textSearch('title', query)
-        .limit(20)
+        .or(`description.ilike.%${query}%,refined_description.ilike.%${query}%`)
 
-      if (error) {
-        console.error('Supabase error:', error)
-        throw error
+      if (detailsError) {
+        console.error('Supabase error:', detailsError)
+        throw detailsError
       }
-
-      if (!data) {
-        console.error('No data returned')
-        throw new Error('No data returned from Supabase')
+      
+      // Combine results by getting the full technology listings for matches in details
+      let combinedResults = [...(listingsData || [])]
+      
+      if (detailsData && detailsData.length > 0) {
+        const techIds = detailsData.map(detail => detail.technology_id)
+        
+        const { data: additionalListings, error: additionalError } = await supabase
+          .from('technology_listings')
+          .select(`
+            id,
+            title,
+            inventors,
+            technology_areas,
+            case_number,
+            url,
+            cleaned_url,
+            university_id,
+            universities!technology_listings_university_id_fkey (
+              name
+            ),
+            technology_details!technology_details_technology_id_fkey (
+              description,
+              refined_description,
+              url
+            )
+          `)
+          .in('id', techIds)
+        
+        if (additionalError) {
+          console.error('Supabase error:', additionalError)
+          throw additionalError
+        }
+        
+        // Merge the results, avoiding duplicates
+        if (additionalListings) {
+          const existingIds = new Set(combinedResults.map(item => item.id))
+          additionalListings.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              combinedResults.push(item)
+            }
+          })
+        }
       }
+      
+      console.log('Combined results before mapping (first 5):', JSON.stringify(combinedResults.slice(0, 5).map(d => ({id: d.id, title: d.title})), null, 2));
 
-      const formattedData = (data as unknown as SupabaseTechnologyListing[])?.map(item => ({
-        id: item.id,
-        title: item.title,
-        inventors: item.inventors,
-        technology_areas: item.technology_areas,
-        description: item.technology_details?.description ?? undefined
-      })) || []
+      // REMOVED formatting logic, just pass raw data
+      const simplifiedFormattedData = (combinedResults as unknown as SupabaseTechnologyListing[])?.map((item) => {
+        return {
+          id: item.id,
+          title: item.title,
+          inventors: item.inventors,
+          technology_areas: item.technology_areas,
+          case_number: item.case_number,
+          url: item.technology_details?.url || item.cleaned_url,
+          university_name: item.universities?.name,
+          description: item.technology_details?.refined_description || item.technology_details?.description || undefined,
+        };
+      }) || [];
 
-      setResults(formattedData)
+      console.log('Simplified formatted data after map (first 5):', JSON.stringify(simplifiedFormattedData.slice(0, 5).map(d => ({id: d.id, title: d.title})), null, 2));
+      
+      setResults(simplifiedFormattedData);
+
     } catch (err) {
       console.error('Search error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -72,4 +211,4 @@ export function useSearchTechnologies() {
   }
 
   return { results, isLoading, error, searchTechnologies }
-} 
+ } 
