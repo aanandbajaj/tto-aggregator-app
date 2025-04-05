@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabase';
 import { useNavigate } from 'react-router-dom';
+import emailjs from 'emailjs-com';
 
 export function Landing() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,8 @@ export function Landing() {
     navigate('/login');
   };
 
+  // Commenting out the waitlist signup function
+  /*
   const handleWaitlistSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -28,51 +31,54 @@ export function Landing() {
 
     try {
       setLoading(true);
-      
-      // 1. Insert into waitlist table
+
+      // Check if email already exists in the waitlist
+      const { data: existingEmails, error: fetchError } = await supabase
+        .from('waitlist')
+        .select('email')
+        .eq('email', email);
+
+      if (fetchError) throw fetchError;
+
+      if (existingEmails && existingEmails.length > 0) {
+        setError('This email is already on the waitlist.');
+        return;
+      }
+
+      // Insert into waitlist table
       const { error: insertError } = await supabase
         .from('waitlist')
         .insert([{ email }]);
 
       if (insertError) throw insertError;
 
-      // 2. Send confirmation email via Supabase Auth
-      const { error: emailError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin,
-          data: { type: 'waitlist_confirmation' }
-        }
-      });
+      // Send email using EmailJS
+      const emailParams = {
+        to_email: email,
+        message: 'Thank you for joining our waitlist!',
+      };
 
-      if (emailError) throw emailError;
+      await emailjs.send('service_3iswzli', 'template_vpciy1b', emailParams, 'YOUR_USER_ID');
 
       setSuccess(true);
+      setSuccessMessage('🎉 Thank you for joining! You\'ll be the first to know about new features.');
       setEmail('');
-      setSuccessMessage('Confirmation email sent! Check your inbox.');
+      setTimeout(() => setSuccess(false), 5000);
 
     } catch (err) {
       let errorMessage = 'Failed to join waitlist';
-      
-      // Handle Error instances
       if (err instanceof Error) {
         errorMessage = err.message;
-      } 
-      // Handle string error messages
-      else if (typeof err === 'string') {
+      } else if (typeof err === 'string') {
         errorMessage = err;
       }
-      // Handle Supabase errors
-      else if (err && typeof err === 'object' && 'message' in err) {
-        errorMessage = (err as { message: string }).message;
-      }
-
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-  
+  */
+
   return (
     <div 
       className="flex-grow flex flex-col items-center justify-center text-center p-4" 
@@ -100,7 +106,8 @@ export function Landing() {
         <p className="text-lg sm:text-xl mb-8 text-gray-600 max-w-2xl mx-auto">
           Search through <span className="bg-blue-600 text-white px-2 py-0.5 rounded-lg">10,000+</span> technologies from leading universities ready for commercialization. Sign up to be notified when we launch open beta!
         </p>
-        <form onSubmit={handleWaitlistSignup} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto">
+        {/* Comment out the waitlist form */}
+        {/* <form onSubmit={handleWaitlistSignup} className="flex flex-col sm:flex-row gap-4 justify-center items-center max-w-2xl mx-auto">
           <input
             type="email"
             placeholder="Your Email Address"
@@ -116,18 +123,14 @@ export function Landing() {
           >
             {loading ? 'Submitting...' : 'Join Waitlist!'}
           </button>
-        </form>
+        </form> */}
         <div className="w-full text-center">
           {error && (
             <p className="text-red-500 text-sm mt-2 animate-fade-in">
               {error}
             </p>
           )}
-          {success && (
-            <p className="text-green-500 text-sm mt-2 animate-fade-in">
-              🎉 Thanks for joining! You'll be the first to know about new features.
-            </p>
-          )}
+
           {successMessage && (
             <p className="text-green-500 text-sm mt-2 animate-fade-in">
               {successMessage}

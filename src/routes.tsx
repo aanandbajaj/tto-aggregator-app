@@ -7,7 +7,6 @@ export function AppRoutes() {
     <Routes>
       <Route path="/" element={<HomeSearch />} />
       <Route path="/search" element={<SearchResults />} />
-      <Route path="/homesearch" element={<HomeSearch />} />
     </Routes>
   );
 }
