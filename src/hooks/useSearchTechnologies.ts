@@ -110,12 +110,12 @@ export function useSearchTechnologies() {
         supabaseQuery = supabaseQuery.or(quotedFilters.join(','));
       }
 
-
-
       // OR logic (title only)
       if (orTerms.length > 0) {
-        const orFilters = orTerms.map(term => `title.ilike.%${encodeURIComponent(term)}%`).join(',');
-        supabaseQuery = supabaseQuery.or(orFilters);
+        const encodedTerms = orTerms.map(term => 
+          `title.ilike.%${encodeURIComponent(term.toLowerCase())}%`
+        );
+        supabaseQuery = supabaseQuery.or(encodedTerms.join(','));
       }
       // AND logic (chained filters)
       else if (andTerms.length > 0) {
