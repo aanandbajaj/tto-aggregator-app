@@ -39,9 +39,9 @@ function StandardHeader({ user }: { user: any; handleLogout: () => void }) {
 // Search results header layout with logo on far left and buttons on far right
 function SearchResultsHeader({ user, handleLogout }: { user: any; handleLogout: () => void }) {
   return (
-    <div className="max-w-8xl mx-auto flex justify-between">
+    <div className="max-w-7xl mx-auto flex items-center justify-between">
       <div className="flex-none">
-        <Link to={user ? '/homesearch' : '/'} className="text-2xl font-serif font-bold text-gray-900 hover:text-gray-700 transition-colors">
+        <Link to="/homesearch" className="text-2xl font-serif font-bold text-gray-900 hover:text-gray-700 transition-colors">
           Papyrus
         </Link>
       </div>
@@ -49,7 +49,8 @@ function SearchResultsHeader({ user, handleLogout }: { user: any; handleLogout: 
         <a href="#" className="text-gray-700 hover:text-gray-900">
           Contact
         </a>
-        {user ? (
+        {/* Comment out the login/logout logic */}
+        {/* {user ? (
           <button 
             onClick={handleLogout} 
             className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors text-sm font-medium"
@@ -63,7 +64,7 @@ function SearchResultsHeader({ user, handleLogout }: { user: any; handleLogout: 
           >
             Login
           </Link>
-        )}
+        )} */}
       </nav>
     </div>
   );
