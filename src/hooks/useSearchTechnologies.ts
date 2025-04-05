@@ -114,8 +114,8 @@ export function useSearchTechnologies() {
 
       // OR logic (title only)
       if (orTerms.length > 0) {
-        const orFilters = orTerms.map(term => `title.ilike.%${term}%`).join(',');
-        supabaseQuery = supabaseQuery.or(`(${orFilters})`);
+        const orFilters = orTerms.map(term => `title.ilike.%${encodeURIComponent(term)}%`).join(',');
+        supabaseQuery = supabaseQuery.or(orFilters);
       }
       // AND logic (chained filters)
       else if (andTerms.length > 0) {
