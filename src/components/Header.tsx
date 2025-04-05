@@ -7,7 +7,7 @@ function StandardHeader({ user }: { user: any; handleLogout: () => void }) {
   return (
     <div className="max-w-7xl mx-auto flex items-center justify-between">
       <div className="flex-none">
-        <Link to="/homesearch" className="text-2xl font-serif font-bold text-gray-900 hover:text-gray-700 transition-colors">
+        <Link to="/" className="text-2xl font-serif font-bold text-gray-900 hover:text-gray-700 transition-colors">
           Papyrus
         </Link>
       </div>
@@ -37,7 +37,7 @@ function StandardHeader({ user }: { user: any; handleLogout: () => void }) {
 }
 
 // Search results header layout with logo on far left and buttons on far right
-function SearchResultsHeader({ user, handleLogout }: { user: any; handleLogout: () => void }) {
+function SearchResultsHeader({ user }: { user: any; handleLogout: () => void }) {
   return (
     <div className="max-w-7xl mx-auto flex items-center justify-between">
       <div className="flex-none">
