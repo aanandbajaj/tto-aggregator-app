@@ -12,7 +12,7 @@ function StandardHeader({ user }: { user: any; handleLogout: () => void }) {
         </Link>
       </div>
       <nav className="flex items-center gap-4 flex-none">
-        <a href="mailto:aanand222@gmai.com" className="text-gray-700 hover:text-gray-900">
+        <a href="mailto:aanand222@gmail.com" className="text-gray-700 hover:text-gray-900">
           Contact
         </a>
         {/* Comment out the login button */}
